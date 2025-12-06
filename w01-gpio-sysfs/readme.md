@@ -17,4 +17,8 @@
 - echo 0 > value
 
 ## 4. Pseudocode
-(你在手機可以快速重建)
+1.Write gpio index to /sys/class/gpio/export for create GPIOsysfs
+2.Write gpio direction (Out/In) to /sys/class/gpio/gpio"index"/direction for confirm how GPIOsysfs do
+3.Write gpio value (0/1) to /sys/class/gpio/gpio"index"/value for make GPIOsysfs work
+4.Read gpio value (0/1) with /sys/class/gpio/gpio"index" for confirm data
+5.Write gpio index to /sys/class/gpio/unexport for close GPIOsysfs
