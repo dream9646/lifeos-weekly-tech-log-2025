@@ -9,7 +9,7 @@
 
 ## 2. Diagram
 
-![GPIO sysfs flow](./gpio-flow.png)
+![GPIO sysfs flow](./IMG_5738.png)
 1. export GPIO index
 2. set direction
 3. write value (for output)
