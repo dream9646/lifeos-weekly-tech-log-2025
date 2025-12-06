@@ -37,3 +37,10 @@
 
 5. Write GPIO index to /sys/class/gpio/unexport
    - Remove /sys/class/gpio/gpio<index> node
+
+關鍵字: direction=in/out 本質差異
+內容:
+- in = 感測 → read-only → Hi-Z，不會影響外部電路
+- out = 控制 → write-only(+read) → SoC 主動輸出
+- in 用於 detect；out 用於 control
+- 方向決定資料流：外→內（in），內→外（out）
