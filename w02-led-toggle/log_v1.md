@@ -1,3 +1,11 @@
+# W2 LED toggle log
+
+## 2025-12-09 v1 (fake /tmp/gpio)
+
+Command:
+```bash
+strace -f ./gpio_led_toggle_mark 37 3 100000
+
 root@aewin:/home/aewin/test# strace -f ./gpio_led_toggle_mark 37 3 100
 execve("./gpio_led_toggle_mark", ["./gpio_led_toggle_mark", "37", "3", "100"], 0x7fff7d4da300 /* 19 vars */) = 0
 brk(NULL)                               = 0x587f5d7a0000
