@@ -6,7 +6,7 @@ LED toggle = GPIO sysfs + Time
 - Basic loop control in C
 
 ## 2. Flow diagram
-![LED toggle flow](./led-toggle-flow.png)
+![LED toggle flow](./gpio_led_toggle_flow.drawio.png)
 
 ## 3. Test plan
 - echo N > export
