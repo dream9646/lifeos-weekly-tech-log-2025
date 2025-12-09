@@ -274,4 +274,92 @@ gpio_export() 學習重點（v2）
 5) 發現重複 pattern：後面可抽成 write_once()。
 6) path 應由函式內組合，而不是由 caller 傳入。
 ------------------------------------------------------------
+------------------------------------------------------------
+gpio_write_value() 設計重點
+------------------------------------------------------------
+- API 介面:
+  int gpio_write_value(int gpio, int value);
+
+- 內部邏輯:
+  1) path = GPIO_BASE "/gpio%d/value"
+  2) open(path, O_WRONLY)
+  3) 將 value 正規化為 "0" 或 "1"
+  4) write(fd, buf, strlen(buf))
+  5) close(fd)
+
+- 心法:
+  - 函數名稱要和行為一致（value 真的要用到）
+  - sysfs /value 寫入的是字串，不是整數
+  - 對 caller 來說，應該只需要記：
+      gpio_write_value(LED_GPIO, 1); // on
+      gpio_write_value(LED_GPIO, 0); // off
+------------------------------------------------------------
+============================================================
+W2：GPIO LED Toggle v1 → v2 演進總結
+============================================================
+
+1) v1 特徵（流程直寫版）
+------------------------------------------------------------
+- 所有 sysfs 路徑 / open / write / close 都寫在 main() 裡。
+- 優點：
+  - 一眼看得到完整流程。
+- 缺點：
+  - 重複程式多（export/direction/value/unexport pattern 一樣）
+  - main() 太長，可讀性差
+  - 未來要改 base path 或錯誤處理，很難一次改好。
+
+------------------------------------------------------------
+2) v2 特徵（API 抽象版）
+------------------------------------------------------------
+- 抽出 4 個 API：
+    int gpio_export(int gpio);
+    int gpio_set_direction(int gpio, const char *dir);
+    int gpio_write_value(int gpio, int value);
+    int gpio_unexport(int gpio);
+
+- main() 變成高階流程：
+    gpio_export(gpio);
+    gpio_set_direction(gpio, "out");
+    for (i = 0; i < count; ++i) {
+        gpio_write_value(gpio, 1);
+        usleep(delay_ms);
+        gpio_write_value(gpio, 0);
+        usleep(delay_ms);
+    }
+    gpio_unexport(gpio);
+
+- 使用 GPIO_BASE 做抽象化：
+    #define GPIO_BASE "/tmp/gpio"
+  未來改成 /sys/class/gpio 只要改一行。
+
+- 錯誤處理統一：
+  - 所有失敗都回傳 EXIT_FAILURE
+  - main() 可以用 if(...) 提早返回
+
+------------------------------------------------------------
+3) strace 比較重點
+------------------------------------------------------------
+- v1 / v2 在行為上類似：
+  - 初始化：export + direction
+  - 迴圈：反覆 open/write("1"/"0")/close
+  - 收尾：unexport
+
+- v2 的優點不在於 syscalls 減少，
+  而在於：
+    - 程式結構更清楚
+    - 未來可以在 API 層做最佳化（v3：value 只 open 一次）
+
+------------------------------------------------------------
+4) 心法註記
+------------------------------------------------------------
+- 參同契：
+  「先立其本，而道自生。」
+  v1 先讓功能跑通（本立），v2 才來談抽象與 API（道生）。
+
+- 孫子兵法：
+  「善戰者，勝於易勝者也。」
+  把困難問題（sysfs + open/write）拆成容易的小函數，
+  每一小步都容易成功，整體自然穩定。
+
+============================================================
 
