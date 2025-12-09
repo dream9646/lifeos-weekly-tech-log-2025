@@ -63,3 +63,50 @@ LED daemon：
   - 檢查是否為 SIO 硬體（無 sysfs）
 
 ============================================================
+============================================================
+W2 LED Toggle 重點摘要
+============================================================
+- static const ssize_t → 用於固定、不變的數值（buffer、toggle 次數）
+- fprintf/printf/perror → stdout/錯誤/errno 訊息
+- argc/argv → CLI 工具的參數解析核心
+- return WriteOnce(...) → 傳遞函式回傳值簡潔寫法
+- enum / typedef → 整數常數組與型別命名
+- strerror(errno) → 系統錯誤描述
+- 三元運算子 → 簡潔轉換 "1"/"0"
+- EXIT_SUCCESS / EXIT_FAILURE → 統一回傳碼
+- sysfs header 不用背，用久自然熟
+- pointer × 6 能力 + strace = BMC 工程師基本功
+
+最重要：
+  NCT6126D 是 SuperIO，不是 BMC GPIO，
+  無法使用 /sys/class/gpio。
+  W2 練習請使用 /tmp/gpio fake sysfs。
+
+============================================================
+============================================================
+C 語法 / I/O 小抄（W2 版）
+============================================================
+- static function:
+  只給本 .c 檔用的函式 → static
+  避免撞名、隱藏實作、方便最佳化。
+
+- const parameter:
+  傳值 (int) → 加不加 const 功能一樣
+  指標 (char *) → 用 const 保證不改字串內容
+
+- printf / fprintf / perror:
+  printf           → stdout（行緩衝、可被重導）
+  fprintf(stderr)  → stderr（幾乎不緩衝、不易被重導）
+  perror("msg")    → 在 stderr 印 "msg: 錯誤說明"
+
+- argv:
+  argv[0] = 程式名
+  argv[1] = 第 1 個參數
+  -> 陣列仍從 0 開始，只是 0 留給程式名。
+
+- 沒 LED 怎麼驗證:
+  1) 用 /tmp/gpio 假 sysfs，watch value 檔案內容
+  2) 在迴圈加 printf debug
+  3) 用 strace 檢查 open/write 是否成功
+  4) 之後搬到真 BMC 板實測 LED
+============================================================
