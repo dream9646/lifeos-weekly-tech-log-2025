@@ -163,4 +163,105 @@ C 語法 / I/O 小抄（W2 版）
 - 小於 10 ms → 看起來幾乎長亮。
 - 用 usleep 時，腦中先想「我要幾 ms」，再乘 1000 變成 µs。
 ============================================================
+============================================================
+W2：GPIO LED Toggle（user space / fake sysfs 版）
+============================================================
+
+1) 任務目標
+------------------------------------------------------------
+- 從 W1 的「讀 GPIO」進化到「寫 GPIO」
+- 實作最小版 LED toggle C 程式：
+  ./gpio_led_toggle [gpio] [count] [delay_ms]
+- 熟悉：
+  - open / write / close
+  - usleep（時間單位）
+  - errno + perror
+  - strace 觀察系統呼叫
+
+程式本體：
+  - 放在 GitHub：w02-led-toggle/gpio_led_toggle_mark.c
+  - 大頭四只記觀念與流程
+
+------------------------------------------------------------
+2) 核心流程（fake /tmp/gpio 版）
+------------------------------------------------------------
+1. 解析參數：
+   - gpio      = argv[1]
+   - count     = argv[2]
+   - delay_ms  = argv[3] （實作時 * 1000 → us）
+
+2. export：
+   - path = "/tmp/gpio/export"
+   - buf  = "N" (e.g. "37")
+   - open(path, O_WRONLY)
+   - write(fd, buf, strlen(buf))
+   - close(fd)
+   - usleep(50 ms) 等待節點建立
+
+3. direction：
+   - path = "/tmp/gpio/gpioN/direction"
+   - buf  = "out"
+   - open / write / close 一樣的 pattern
+
+4. toggle 迴圈：
+   for i in [0 .. count-1]:
+     - 印 "Do count:i"
+     - path = "/tmp/gpio/gpioN/value"
+     - 寫 "1" → usleep(delay_ms)
+     - 寫 "0" → usleep(delay_ms)
+
+5. unexport：
+   - path = "/tmp/gpio/unexport"
+   - buf  = "N"
+   - open / write / close
+
+------------------------------------------------------------
+3) 重要語法與概念
+------------------------------------------------------------
+- 程式組成：
+  1) 資料型態（int / char[] / ssize_t）
+  2) 變數（fd, gpio, count, delay_ms, path, buf）
+  3) 函數（main + libc API：open/write/close/usleep）
+  4) 控制流程（if 檢查 argc、for 迴圈）
+
+- 時間單位：
+  - 1 s  = 1000 ms
+  - 1 ms = 1000 us
+  - usleep(delay_ms * 1000) → 以 ms 為界面，比較直覺
+
+- 錯誤處理：
+  - open 失敗 → perror("open ..."); return EXIT_FAILURE;
+  - write 長度不符 → perror("write ..."); close(fd); return EXIT_FAILURE;
+  - 全程用 EXIT_SUCCESS / EXIT_FAILURE 作為回傳碼
+
+- stdout / stderr：
+  - printf(...)       → stdout（一般訊息）
+  - perror("msg")     → stderr（錯誤訊息 + errno 字串）
+  - 技術文建議：一般流程 print → printf，錯誤 → perror
+
+------------------------------------------------------------
+4) Debug 流程（strace）
+------------------------------------------------------------
+- 使用 strace 觀察系統呼叫：
+  strace -f ./gpio_led_toggle_mark 37 3 100
+
+- 檢查重點：
+  - open("/tmp/gpio/export", O_WRONLY) 是否成功
+  - write("37") / write("out") / write("1") / write("0") 的長度是否正確
+  - 程式是否 exit(0)
+
+- log 放置：
+  - GitHub: w02-led-toggle/log_v1.md
+  - 完整 strace：w02-led-toggle/log/strace_v1_full.txt
+
+------------------------------------------------------------
+5) 兵法 / 心法標註
+------------------------------------------------------------
+- 參同契：一陰一陽之謂道 → LED 亮/滅即陰陽交替
+- 孫子兵法：兵貴神速 → 先讓最小版本跑通，再談重構與最佳化
+- 技能心法：
+  - v1 重點在「從 0 到 1」和「看得懂 strace」
+  - v2 再把重複的 open/write 收斂成函式（抽象化）
+
+============================================================
 
