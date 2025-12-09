@@ -1,3 +1,11 @@
+# W1 GPIO sysfs log
+
+## 2025-12-02 v1 (fake /tmp/gpio)
+
+Command:
+```bash
+strace ./gpio_sysfs 37
+
 root@scb6915vs3:/tmp/gpio# gcc  gpio_sysfs.c -o gpio_sysfs
 root@scb6915vs3:/tmp/gpio# ./gpio_sysfs 37
 Read back value:1
